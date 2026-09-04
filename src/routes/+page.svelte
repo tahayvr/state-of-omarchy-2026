@@ -26,7 +26,6 @@
 
 <div class="flex min-h-screen flex-col items-center justify-center gap-8 px-4 py-12">
 	<Logo />
-	<h2>The yearly survey about Omarchy Linux</h2>
 	<Card class="w-full max-w-md bg-transparent">
 		<CardHeader class="text-center">
 			<CardDescription>
