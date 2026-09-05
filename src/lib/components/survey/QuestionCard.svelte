@@ -14,8 +14,8 @@
 <fieldset class="space-y-3 rounded-lg border border-transparent py-2">
 	<legend class="flex flex-wrap items-center gap-2 text-sm font-medium">
 		<span id={`q-${question.id}`}>{question.prompt || '(Untitled question)'}</span>
-		{#if question.required}
-			<Badge variant="secondary">Required</Badge>
+		{#if !question.required}
+			<Badge variant="outline">Optional</Badge>
 		{/if}
 	</legend>
 	{@render children()}
