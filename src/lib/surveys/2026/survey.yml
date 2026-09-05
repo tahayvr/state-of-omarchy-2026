@@ -1,0 +1,984 @@
+# State of Omarchy 2026 — survey definition
+# Source of truth for the form UI and the responses schema.
+#
+# Types:
+#   single      one option id
+#   multiple    array of option ids
+#   scale       integer min..max
+#   nps         integer 0..10
+#   text        string
+#   text_list   array of strings
+#   country     ISO 3166-1 alpha-2 (renderer supplies the country list)
+#
+# Storage (suggested):
+#   responses
+#     id            uuid pk
+#     edition_id    text        # omarchy2026
+#     source        text null   # ?src= query, e.g. discord | x | github
+#     started_at    timestamptz
+#     submitted_at  timestamptz
+#     completion    int         # 0–100, share of answered questions
+#     user_agent    text null
+#     locale        text null
+#   answers
+#     id            uuid pk
+#     response_id   uuid fk responses(id) on delete cascade
+#     question_id   text        # questions[].id
+#     option_id     text null   # for single / each selected multiple option
+#     number_value  int null    # scale, nps
+#     text_value    text null   # text, text_list item, or "other" write-in
+#     position      int null    # text_list order
+#   unique (response_id, question_id, option_id, position)
+#
+# Do not rename an id after the survey opens. Add a new option instead.
+
+survey:
+  id: state_of_omarchy
+  editionId: omarchy2026
+  year: 2026
+  title: State of Omarchy
+  hashtag: StateOfOmarchy
+  estimatedMinutes: 8
+  version: 2
+
+sections:
+  - id: setup
+    title: Setup
+    description: How you installed Omarchy and how you run it.
+    questions:
+      - id: first_linux
+        type: single
+        required: true
+        prompt: Is Omarchy your first experience with a Linux distribution?
+        options:
+          - id: yes
+            label: Yes
+          - id: no
+            label: No
+
+      - id: daily_driver
+        type: single
+        required: true
+        prompt: Is Omarchy your daily driver?
+        options:
+          - id: only
+            label: Yes — it's my only daily machine
+          - id: primary
+            label: Yes — primary, but I keep another OS around
+          - id: secondary
+            label: No — I use it on a second machine
+          - id: trying
+            label: Just trying it / not settled
+          - id: stopped
+            label: I installed it and moved on
+
+      - id: install_path
+        type: single
+        required: true
+        prompt: How did you first install it?
+        options:
+          - id: bare_metal
+            label: Bare metal
+          - id: dual_boot
+            label: Dual boot
+          - id: vm
+            label: Virtual machine
+          - id: try_omarchy_macos
+            label: Try Omarchy app on macOS
+          - id: apple_silicon
+            label: Apple Silicon / Asahi-style install
+          - id: other
+            label: Other
+        allowOther: true
+
+      - id: machine_count
+        type: single
+        prompt: How many machines run Omarchy?
+        options:
+          - id: one
+            label: '1'
+          - id: two
+            label: '2'
+          - id: three_four
+            label: 3–4
+          - id: five_plus
+            label: 5+
+
+      - id: channel
+        type: single
+        prompt: Which update channel are you on?
+        options:
+          - id: stable
+            label: Stable
+          - id: rc
+            label: RC
+          - id: edge
+            label: Edge
+          - id: dev
+            label: Dev
+          - id: unsure
+            label: Not sure
+
+      - id: previous_os
+        type: multiple
+        prompt: What OS / distros were you primarily using before Omarchy?
+        options:
+          - id: macos
+            label: macOS
+          - id: windows
+            label: Windows
+          - id: ubuntu
+            label: Ubuntu
+          - id: omakub
+            label: Omakub
+          - id: fedora
+            label: Fedora
+          - id: debian
+            label: Debian
+          - id: vanilla_arch
+            label: Vanilla Arch
+          - id: cachyos
+            label: CachyOS
+          - id: endeavour
+            label: EndeavourOS
+          - id: nixos
+            label: NixOS
+          - id: popos
+            label: Pop!_OS
+          - id: other_linux
+            label: Other Linux
+          - id: none
+            label: None — Omarchy is my first OS on this machine
+        allowOther: true
+
+  - id: hardware
+    title: Hardware
+    description: What you run it on.
+    questions:
+      - id: machine_types
+        type: multiple
+        required: true
+        prompt: What hardware are you running Omarchy on?
+        options:
+          - id: framework
+            label: Framework
+          - id: lenovo
+            label: Lenovo
+          - id: dell
+            label: Dell
+          - id: intel_mac
+            label: Intel Mac
+          - id: apple_silicon
+            label: Apple Silicon Mac
+          - id: mini_pc
+            label: Mini PC (Beelink, Minisforum, etc.)
+          - id: desktop
+            label: Custom desktop
+          - id: other
+            label: Other
+        allowOther: true
+
+      - id: apple_experience
+        type: single
+        prompt: If you use Apple hardware, how's the experience?
+        showIf:
+          questionId: machine_types
+          op: includesAny
+          values: [intel_mac, apple_silicon]
+        options:
+          - id: great
+            label: Works great
+          - id: usable
+            label: Usable, with caveats
+          - id: waiting_as
+            label: Waiting on Apple Silicon to mature
+          - id: gave_up
+            label: Tried and gave up
+
+      - id: gpu
+        type: single
+        prompt: Primary GPU?
+        options:
+          - id: intel
+            label: Intel
+          - id: amd
+            label: AMD
+          - id: nvidia
+            label: NVIDIA
+          - id: apple
+            label: Apple Silicon
+          - id: mixed
+            label: Mixed / other
+
+  - id: desktop
+    title: Desktop Features
+    description: Quattro, Quickshell, Hyprland.
+    questions:
+      - id: quattro_status
+        type: single
+        required: true
+        prompt: Are you using Omarchy Quattro (4.x)?
+        options:
+          - id: fresh
+            label: Fresh 4.x install
+          - id: upgraded
+            label: Upgraded from 3.x
+          - id: still_3
+            label: Still on 3.x
+          - id: rolled_back
+            label: Upgraded, then rolled back
+          - id: unsure
+            label: Not sure
+
+      - id: quattro_feel
+        type: single
+        prompt: Compared with the old Waybar / Walker / Mako stack, Quattro is…
+        options:
+          - id: better
+            label: Clearly better
+          - id: mixed
+            label: Mixed
+          - id: worse
+            label: Worse
+          - id: havent
+            label: Haven't used both
+
+      - id: bar_edge
+        type: single
+        prompt: Where does your bar live?
+        options:
+          - id: top
+            label: Top
+          - id: bottom
+            label: Bottom
+          - id: left
+            label: Left
+          - id: right
+            label: Right
+
+      - id: hyprland_comfort
+        type: scale
+        prompt: How comfortable are you with Hyprland tiling?
+        min: 1
+        max: 5
+        labels:
+          1: Still fighting it
+          5: It's muscle memory
+
+      - id: lua_config
+        type: single
+        prompt: Hyprland config in Lua — how is that going?
+        options:
+          - id: like
+            label: I like it
+          - id: fine
+            label: Fine
+          - id: miss_old
+            label: I miss the old format
+          - id: dont_touch
+            label: I don't touch the config
+
+  - id: themes
+    title: Themes
+    description: The theme system and switcher.
+    questions:
+      - id: default_themes
+        type: multiple
+        prompt: Which of the default themes do you use?
+        limit: 3
+        options:
+          - id: tokyo_night
+            label: Tokyo Night
+          - id: catppuccin
+            label: Catppuccin
+          - id: catppuccin_latte
+            label: Catppuccin Latte
+          - id: everforest
+            label: Everforest
+          - id: gruvbox
+            label: Gruvbox
+          - id: nord
+            label: Nord
+          - id: rose_pine
+            label: Rosé Pine
+          - id: kanagawa
+            label: Kanagawa
+          - id: osaka_jade
+            label: Osaka Jade
+          - id: matte_black
+            label: Matte Black
+          - id: vantablack
+            label: Vantablack
+          - id: ristretto
+            label: Ristretto
+          - id: hackerman
+            label: Hackerman
+          - id: lumon
+            label: Lumon
+          - id: ethereal
+            label: Ethereal
+          - id: miasma
+            label: Miasma
+          - id: retro_82
+            label: Retro 82
+          - id: flexoki_light
+            label: Flexoki Light
+          - id: white
+            label: White
+          - id: solitude
+            label: Solitude
+          - id: last_horizon
+            label: Last Horizon
+          - id: lupine
+            label: Lupine
+          - id: none
+            label: I don't use any of the default themes
+        exclusiveOptions: [none]
+
+      - id: favorite_themes
+        type: text_list
+        prompt: Name 3 of your favorite themes
+        limit: 3
+        placeholder: Theme name
+
+      - id: theme_switch
+        type: single
+        prompt: How often do you switch themes?
+        options:
+          - id: once
+            label: Set it once
+          - id: daily
+            label: Daily / by mood
+          - id: weekly
+            label: Weekly
+          - id: monthly
+            label: Monthly or less
+
+      - id: theme_sync
+        type: scale
+        prompt: How well do themes stay in sync across shell, terminal, Neovim, VS Code, btop?
+        min: 1
+        max: 5
+        labels:
+          1: Always fighting drift
+          5: One switch, everything matches
+
+      - id: made_theme
+        type: single
+        prompt: Have you made your own theme?
+        options:
+          - id: published
+            label: Yes, and I published it
+          - id: private
+            label: Yes, private only
+          - id: want
+            label: Not yet, I want to
+          - id: no
+            label: No
+
+      - id: theme_tools
+        type: single
+        prompt: Which of these did you use to make your theme?
+        showIf:
+          questionId: made_theme
+          op: includesAny
+          values: [published, private]
+        options:
+          - id: aether
+            label: Aether
+          - id: omarchist
+            label: Omarchist
+          - id: manual
+            label: Manually / cloning a theme and modifying it
+          - id: other
+            label: Other
+        allowOther: true
+
+  - id: apps
+    title: Apps
+    description: Defaults, editors, the Oma* tools.
+    questions:
+      - id: terminal
+        type: single
+        prompt: Which terminal do you use on Omarchy?
+        options:
+          - id: foot
+            label: Foot (default)
+          - id: ghostty
+            label: Ghostty
+          - id: kitty
+            label: Kitty
+          - id: alacritty
+            label: Alacritty
+          - id: wezterm
+            label: WezTerm
+          - id: other
+            label: Other
+        allowOther: true
+
+      - id: editor
+        type: multiple
+        prompt: Editors you actually use on Omarchy?
+        options:
+          - id: neovim
+            label: Neovim
+          - id: vscode
+            label: VS Code
+          - id: zed
+            label: Zed
+          - id: cursor
+            label: Cursor
+          - id: helix
+            label: Helix
+          - id: emacs
+            label: Emacs
+          - id: other
+            label: Other
+        allowOther: true
+
+      - id: oma_apps
+        type: multiple
+        prompt: Which built-in Oma* apps do you use?
+        options:
+          - id: omawrite
+            label: Omawrite
+          - id: omacalc
+            label: Omacalc
+          - id: omacut
+            label: Omacut
+          - id: none
+            label: None of them
+        exclusiveOptions: [none]
+
+      - id: preinstalls
+        type: single
+        prompt: What did you do with the preinstalled apps?
+        options:
+          - id: kept
+            label: Kept most of them
+          - id: trimmed
+            label: Removed some
+          - id: nuke
+            label: Removed the preinstalls in bulk
+          - id: added
+            label: Kept them and added more
+
+      - id: browser
+        type: single
+        prompt: What's your default browser?
+        options:
+          - id: chromium
+            label: Chromium
+          - id: firefox
+            label: Firefox
+          - id: zen
+            label: Zen
+          - id: brave
+            label: Brave
+          - id: other
+            label: Other
+        allowOther: true
+
+  - id: plugins
+    title: Plugins
+    description: The plugin system.
+    questions:
+      - id: plugin_count
+        type: single
+        prompt: How many third-party plugins are enabled?
+        options:
+          - id: zero
+            label: 0 — stock only
+          - id: few
+            label: 1–3
+          - id: some
+            label: 4–10
+          - id: many
+            label: 11+
+
+      - id: plugin_source
+        type: multiple
+        prompt: Where do your plugins come from?
+        options:
+          - id: official
+            label: Official / bundled
+          - id: marketplace
+            label: Plugin marketplace
+          - id: git
+            label: Random git URL
+          - id: cloned
+            label: Cloned a built-in and edited it
+          - id: none
+            label: I don't use extra plugins
+        exclusiveOptions: [none]
+
+      - id: plugin_trust
+        type: single
+        prompt: How do you treat third-party plugins?
+        options:
+          - id: avoid
+            label: I avoid them
+          - id: inspect
+            label: I review the repo first
+          - id: known
+            label: Only from people I recognize
+          - id: yeet
+            label: Install and try
+
+      - id: plugin_happiness
+        type: scale
+        prompt: Happiness with the plugin system?
+        min: 1
+        max: 5
+        labels:
+          1: Broken / unsafe
+          5: This is the point of Quattro
+
+      - id: plugin_writeins
+        type: text_list
+        prompt: Plugins you would tell a friend to install
+        limit: 5
+        placeholder: Plugin name or git URL
+
+  - id: ai
+    title: AI
+    description: The default coding agent and local models.
+    questions:
+      - id: default_agent
+        type: single
+        prompt: Default coding agent?
+        options:
+          - id: claude
+            label: Claude Code
+          - id: codex
+            label: Codex
+          - id: opencode
+            label: OpenCode
+          - id: gemini
+            label: Gemini
+          - id: grok
+            label: Grok
+          - id: copilot
+            label: Copilot
+          - id: crush
+            label: Crush
+          - id: pi
+            label: Pi / Oh My Pi
+          - id: none
+            label: None
+
+      - id: agent_cadence
+        type: single
+        prompt: How often do you launch the agent?
+        options:
+          - id: daily
+            label: Daily
+          - id: weekly
+            label: Weekly
+          - id: rare
+            label: Rarely
+          - id: never
+            label: Never
+
+      - id: crash_diag
+        type: single
+        prompt: Agent crash / core-dump diagnosis?
+        options:
+          - id: used_good
+            label: Used it, it helped
+          - id: used_meh
+            label: Used it, meh
+          - id: aware
+            label: Know about it, haven't used it
+          - id: unaware
+            label: Didn't know that existed
+
+      - id: uses_local_models
+        type: single
+        prompt: Do you use local models?
+        options:
+          - id: yes
+            label: Yes
+          - id: no
+            label: No
+
+      - id: local_llm
+        type: multiple
+        prompt: Local model stack, if any?
+        showIf:
+          questionId: uses_local_models
+          op: eq
+          values: [yes]
+        options:
+          - id: ollama
+            label: Ollama
+          - id: llama_cpp
+            label: llama.cpp
+          - id: vllm
+            label: vLLM
+          - id: mlx
+            label: MLX
+          - id: other
+            label: Other
+        allowOther: true
+
+      - id: ai_share
+        type: single
+        prompt: Roughly how much of your coding on Omarchy is agent-assisted?
+        options:
+          - id: p0
+            label: 0%
+          - id: p20
+            label: 1–20%
+          - id: p40
+            label: 21–40%
+          - id: p60
+            label: 41–60%
+          - id: p80
+            label: 61–80%
+          - id: p100
+            label: 81–100%
+
+  - id: ops
+    title: Updates & trust
+    description: Channels, breakage, snapshots, security.
+    questions:
+      - id: update_cadence
+        type: single
+        prompt: How often do you update Omarchy?
+        options:
+          - id: prompted
+            label: When Omarchy prompts
+          - id: weekly
+            label: Weekly on purpose
+          - id: monthly
+            label: Monthly or slower
+          - id: never
+            label: I don't update
+
+      - id: breakage
+        type: single
+        prompt: Worst breakage in the last 6 months?
+        options:
+          - id: none
+            label: None worth mentioning
+          - id: minor
+            label: Minor, fixed in minutes
+          - id: day
+            label: Lost a working session / half a day
+          - id: reinstall
+            label: Reinstall or snapshot rollback
+
+      - id: snapshots
+        type: single
+        prompt: Do you use snapshots?
+        options:
+          - id: regular
+            label: I use them regularly
+          - id: once
+            label: Used once, saved me
+          - id: unused
+            label: Aware, unused
+          - id: unaware
+            label: Didn't know
+
+      - id: package_managers
+        type: multiple
+        prompt: Which package manager do you use?
+        options:
+          - id: pacman
+            label: Pacman
+          - id: aur
+            label: AUR / yay
+          - id: flatpak
+            label: Flatpak
+          - id: homebrew
+            label: Homebrew
+          - id: snap
+            label: Snap
+          - id: other
+            label: Other
+        allowOther: true
+
+      - id: security
+        type: single
+        prompt: How do you feel about Omarchy's security posture?
+        options:
+          - id: comfortable
+            label: Comfortable
+          - id: cautious
+            label: Fine, but I'm careful
+          - id: concerned
+            label: Concerned
+          - id: dealbreaker
+            label: Dealbreaker
+
+  - id: opinions
+    title: Opinions
+    description: The editorial page.
+    questions:
+      - id: recommend
+        type: nps
+        prompt: How likely are you to recommend Omarchy to a friend who already uses a computer for work?
+        min: 0
+        max: 10
+
+      - id: opinionated
+        type: single
+        prompt: The opinionated defaults are…
+        options:
+          - id: the_point
+            label: The whole point
+          - id: mostly
+            label: Mostly good
+          - id: too_much
+            label: Too much DHH-in-my-OS
+          - id: fight
+            label: I spend time undoing them
+
+      - id: biggest_wins
+        type: multiple
+        prompt: In your opinion, what are the biggest selling points of Omarchy?
+        limit: 3
+        options:
+          - id: install
+            label: Install / first hour
+          - id: theme
+            label: Theming that actually stays in sync
+          - id: tiling
+            label: Hyprland tiling, ready to go
+          - id: shell
+            label: Quattro shell / one-process desktop
+          - id: ai
+            label: Agent integration
+          - id: plugins
+            label: Plugins
+          - id: hardware
+            label: Hardware support (Macs, Framework, …)
+          - id: docs
+            label: Docs / manual
+          - id: community
+            label: Community
+          - id: rolling
+            label: Rolling updates
+          - id: other
+            label: Other
+        allowOther: true
+
+      - id: biggest_pains
+        type: multiple
+        prompt: In your opinion, what are the biggest pain points with Omarchy?
+        limit: 3
+        options:
+          - id: breakage
+            label: Updates / breakage
+          - id: security
+            label: Security / unsandboxed plugins
+          - id: nvidia
+            label: NVIDIA compatibility
+          - id: apple
+            label: Apple Silicon gaps
+          - id: tiling
+            label: Learning the tiling system (Hyprland)
+          - id: missing_app
+            label: A missing app I need
+          - id: docs
+            label: Docs
+          - id: stability
+            label: Stability
+          - id: defaults
+            label: Opinionated defaults I have to undo
+          - id: hardware
+            label: Hardware support gaps
+          - id: other
+            label: Other
+        allowOther: true
+
+      - id: omakub
+        type: single
+        prompt: Have you used Omakub (the Ubuntu sibling)?
+        options:
+          - id: both
+            label: I use both
+          - id: used
+            label: Used it, then moved to Omarchy
+          - id: aware
+            label: Know it, don't use it
+          - id: unaware
+            label: First I'm hearing of it
+
+      - id: year_from_now
+        type: single
+        prompt: A year from now you expect to…
+        options:
+          - id: daily
+            label: Still daily-drive Omarchy
+          - id: side
+            label: Keep it on a side machine
+          - id: leave
+            label: Be back on something else
+          - id: unsure
+            label: Too soon to say
+
+      - id: testimonial
+        type: text
+        prompt: Write a testimonial for the Omarchy site (optional)
+        maxLength: 280
+        placeholder: One or two sentences
+
+  - id: community
+    title: Community
+    questions:
+      - id: found_via
+        type: single
+        prompt: How did you first hear about Omarchy?
+        options:
+          - id: dhh
+            label: DHH
+          - id: youtube
+            label: YouTube
+          - id: x
+            label: X
+          - id: hn
+            label: Hacker News
+          - id: reddit
+            label: Reddit
+          - id: friend
+            label: Friend / coworker
+          - id: other
+            label: Other
+        allowOther: true
+
+      - id: found_via_youtube
+        type: single
+        prompt: Which YouTube channel did you hear about Omarchy from?
+        showIf:
+          questionId: found_via
+          op: eq
+          values: [youtube]
+        options:
+          - id: networkchuck
+            label: NetworkChuck
+          - id: typecraft
+            label: Typecraft
+          - id: other
+            label: Other
+        allowOther: true
+
+      - id: follow_updates
+        type: multiple
+        prompt: Where do you follow the project for updates?
+        options:
+          - id: github
+            label: GitHub
+          - id: x
+            label: X
+          - id: discord
+            label: Discord
+          - id: other
+            label: Other
+          - id: none
+            label: I don't
+        exclusiveOptions: [none]
+        allowOther: true
+
+      - id: contributed
+        type: multiple
+        prompt: Have you ever contributed to Omarchy?
+        options:
+          - id: issue
+            label: Reported an issue
+          - id: pr
+            label: Opened a PR
+          - id: theme
+            label: Published a theme
+          - id: plugin
+            label: Published a plugin
+          - id: vuln
+            label: Disclosed a vulnerability
+          - id: docs
+            label: Docs / writeup
+          - id: community
+            label: Supporting and helping the community
+          - id: money
+            label: Donated
+          - id: want
+            label: Not yet but I want to
+          - id: user
+            label: I'm just a user
+        exclusiveOptions: [user]
+
+  - id: you
+    title: You
+    description: Short demographics. All optional except where marked.
+    questions:
+      - id: years_linux
+        type: single
+        prompt: Years using Linux as a daily OS?
+        options:
+          - id: lt1
+            label: Under 1
+          - id: y1_3
+            label: 1–3
+          - id: y4_9
+            label: 4–9
+          - id: y10
+            label: 10+
+
+      - id: years_tiling
+        type: single
+        prompt: Years using a tiling window manager?
+        options:
+          - id: first
+            label: Omarchy is my first
+          - id: lt1
+            label: Under 1
+          - id: y1_3
+            label: 1–3
+          - id: y4
+            label: 4+
+
+      - id: work
+        type: single
+        prompt: What do you do professionally?
+        options:
+          - id: software
+            label: Software engineer / IC
+          - id: ops
+            label: Sysadmin / IT / DevOps
+          - id: founder
+            label: Founder / manager
+          - id: designer
+            label: Designer
+          - id: student
+            label: Student
+          - id: hobby
+            label: Hobby / not working in tech
+          - id: other
+            label: Other
+        allowOther: true
+
+      - id: country
+        type: country
+        prompt: Where are you?
+        storage: iso2
+        skipOption:
+          id: skip
+          label: Prefer not to say
+
+      - id: age
+        type: single
+        prompt: Age
+        options:
+          - id: a18_24
+            label: 18–24
+          - id: a25_34
+            label: 25–34
+          - id: a35_44
+            label: 35–44
+          - id: a45_54
+            label: 45–54
+          - id: a55
+            label: 55+
+          - id: skip
+            label: Prefer not to say
