@@ -49,11 +49,10 @@
 	{:else}
 		<Button href="/" variant="ghost" size="sm">Log in</Button>
 	{/if}
+	<div class="fixed top-4 left-4">
+		<ToggleButton />
+	</div>
 </header>
 <div class="h-full max-h-screen w-full max-w-full">
 	{@render children()}
-</div>
-
-<div class="fixed right-4 bottom-4">
-	<ToggleButton />
 </div>

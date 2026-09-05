@@ -1,5 +1,5 @@
 <div align="center">
-<img src="./src/lib/assets/soo-logo.png" width="120">
+<img src="./src/lib/assets/soo-logo.png" width="300">
 </div>
 
 Yearly survey for Omarchy Linux. Passwordless auth (email link or code), one response per
