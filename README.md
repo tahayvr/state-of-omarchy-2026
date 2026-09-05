@@ -1,3 +1,7 @@
+<div align="center">
+<img src="./src/lib/assets/soo-logo.png" width="120">
+</div>
+
 Yearly survey for Omarchy Linux. Passwordless auth (email link or code), one response per
 account, and a questionnaire driven entirely by `src/lib/surveys/<year>/survey.yml`.
 
