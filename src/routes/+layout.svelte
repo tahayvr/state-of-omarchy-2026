@@ -52,8 +52,6 @@
 				</Button>
 			</Popover.Content>
 		</Popover.Root>
-	{:else}
-		<Button href="/" variant="ghost" size="sm">Log in</Button>
 	{/if}
 	<div class="fixed top-4 left-4">
 		<ToggleButton />

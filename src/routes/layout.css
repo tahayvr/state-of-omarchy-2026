@@ -129,5 +129,9 @@
 	}
 	html {
 		@apply font-sans;
+		/* Global scale lever: everything rem-based (text, buttons, inputs, spacing)
+		 * grows proportionally. 112.5% ≈ 18px on a default 16px browser setting,
+		 * while still respecting the user's own base font-size preference. */
+		font-size: 112.5%;
 	}
 }
