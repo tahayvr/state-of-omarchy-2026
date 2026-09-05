@@ -18,6 +18,8 @@ export const load: PageServerLoad = async (event) => {
 	return {
 		email: user.email,
 		answered: Object.keys(answers).length,
-		completion: computeCompletion(def, answers)
+		completion: computeCompletion(def, answers),
+		editionTitle: def.meta.title,
+		editionYear: def.meta.year
 	};
 };

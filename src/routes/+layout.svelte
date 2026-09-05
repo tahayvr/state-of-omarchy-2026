@@ -38,6 +38,15 @@
 			</Popover.Trigger>
 			<Popover.Content align="end" class="w-56 p-1">
 				<p class="truncate px-2 py-1.5 text-xs text-muted-foreground">{data.user?.email}</p>
+				{#if data.surveyStatus}
+					<p class="px-2 pb-1.5 text-xs text-muted-foreground" aria-live="polite">
+						{#if data.surveyStatus.submitted}
+							Survey submitted ✓
+						{:else}
+							Survey draft · {data.surveyStatus.completion}% complete
+						{/if}
+					</p>
+				{/if}
 				<Button variant="ghost" size="sm" onclick={signOut} class="w-full justify-start">
 					Sign out
 				</Button>
