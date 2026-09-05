@@ -1,12 +1,6 @@
 <script lang="ts">
 	import { authClient } from '$lib/auth-client';
-	import {
-		Card,
-		CardHeader,
-		CardDescription,
-		CardContent,
-		CardFooter
-	} from '$lib/components/ui/card';
+	import { Card, CardHeader, CardDescription, CardContent } from '$lib/components/ui/card';
 	import { Input } from '$lib/components/ui/input';
 	import { Label } from '$lib/components/ui/label';
 	import { Button } from '$lib/components/ui/button';
@@ -25,23 +19,74 @@
 	let code = $state('');
 	let status = $state<'idle' | 'sending' | 'sent' | 'verifying' | 'error'>('idle');
 	let errorMessage = $state('');
+	let resending = $state(false);
+	let resendIn = $state(0);
+	let resendTimer: ReturnType<typeof setInterval> | null = null;
 
-	async function sendLink(event: SubmitEvent) {
-		event.preventDefault();
-		if (!email || status === 'sending') return;
-		status = 'sending';
-		errorMessage = '';
+	function startCooldown(seconds = 20) {
+		if (resendTimer) clearInterval(resendTimer);
+		resendIn = seconds;
+		resendTimer = setInterval(() => {
+			resendIn -= 1;
+			if (resendIn <= 0 && resendTimer) {
+				clearInterval(resendTimer);
+				resendTimer = null;
+			}
+		}, 1000);
+	}
+
+	function stopCooldown() {
+		if (resendTimer) {
+			clearInterval(resendTimer);
+			resendTimer = null;
+		}
+		resendIn = 0;
+	}
+
+	/** Mints a fresh link + code. Returns an error message, or null on success. */
+	async function requestEmail(): Promise<string | null> {
 		const { error } = await authClient.signIn.magicLink({
 			email: email.trim(),
 			callbackURL: next,
 			newUserCallbackURL: next,
 			errorCallbackURL: '/auth/error'
 		});
-		if (error) {
+		if (error) return error.message ?? 'Could not send the sign-in email. Please try again.';
+		return null;
+	}
+
+	async function sendLink(event: SubmitEvent) {
+		event.preventDefault();
+		if (!email || status === 'sending') return;
+		status = 'sending';
+		errorMessage = '';
+		const problem = await requestEmail();
+		if (problem) {
 			status = 'error';
-			errorMessage = error.message ?? 'Could not send the sign-in email. Please try again.';
+			errorMessage = problem;
 		} else {
 			status = 'sent';
+			startCooldown();
+		}
+	}
+
+	async function resend() {
+		if (resendIn > 0 || resending || status === 'verifying') return;
+		resending = true;
+		errorMessage = '';
+		try {
+			const problem = await requestEmail();
+			if (problem) {
+				errorMessage = problem;
+			} else {
+				code = '';
+				startCooldown();
+			}
+		} catch (e) {
+			console.error('Resend failed:', e);
+			errorMessage = 'Could not resend. Please try again.';
+		} finally {
+			resending = false;
 		}
 	}
 
@@ -76,23 +121,26 @@
 		status = 'idle';
 		errorMessage = '';
 		code = '';
+		stopCooldown();
 	}
 </script>
 
 <Card class="w-full max-w-md bg-transparent">
-	<CardHeader class="text-center">
-		<CardDescription>
-			Sign in with your email to take the State of Omarchy 2026 survey — new here? The same link
-			creates your account.
-		</CardDescription>
-	</CardHeader>
+	{#if status === 'idle' || status === 'error'}
+		<CardHeader class="text-center">
+			<CardDescription>
+				Sign in with your email to take the State of Omarchy 2026 survey — new here? The same link
+				creates your account.
+			</CardDescription>
+		</CardHeader>
+	{/if}
 	<CardContent>
 		{#if status === 'sent' || status === 'verifying'}
 			<div class="space-y-4 text-center">
 				<p class="text-sm font-medium">Check your inbox</p>
 				<FieldDescription>
 					We emailed <span class="font-medium text-foreground">{email}</span> a sign-in link and a 6-digit
-					code. Use either one — both expire in 15 minutes.
+					code. Use either one — both expire in 15 minutes. Can't find it? Check your spam folder.
 				</FieldDescription>
 				<form onsubmit={verifyCode} class="space-y-3">
 					<Field>
@@ -132,7 +180,24 @@
 						{status === 'verifying' ? 'Signing in…' : 'Sign in with code'}
 					</Button>
 				</form>
-				<Button variant="link" onclick={editEmail}>Use a different email</Button>
+				<div class="flex flex-col items-center gap-1">
+					<div class="flex items-center gap-1 text-sm">
+						<span class="text-muted-foreground">Didn't get it?</span>
+						<Button
+							variant="link"
+							class="h-auto p-0 text-sm"
+							onclick={resend}
+							disabled={resendIn > 0 || resending}
+						>
+							{resending
+								? 'Resending…'
+								: resendIn > 0
+									? `Send again in ${resendIn}s`
+									: 'Send email again'}
+						</Button>
+					</div>
+					<Button variant="link" onclick={editEmail}>Use a different email</Button>
+				</div>
 			</div>
 		{:else}
 			<form onsubmit={sendLink}>
@@ -166,9 +231,9 @@
 			</div>
 		{/if}
 	</CardContent>
-	{#if status === 'idle' || status === 'error'}
+	<!-- {#if status === 'idle' || status === 'error'}
 		<CardFooter class="flex justify-center">
 			<p class="text-xs text-muted-foreground">No password needed — link or code signs you in.</p>
 		</CardFooter>
-	{/if}
+	{/if} -->
 </Card>
