@@ -20,7 +20,8 @@
 		</DialogHeader>
 		<div class="space-y-3 py-4">
 			<ul class="list-inside list-disc space-y-2 text-sm text-muted-foreground">
-				<li>We want to make sure entries are from actual human users.</li>
+				<li>We send a sign-in link to verify your email, so each person submits once.</li>
+				<li>There is no password to remember — the link signs you in.</li>
 				<li>We want to notify you when results are published.</li>
 				<li>We want to notify you of future surveys.</li>
 			</ul>

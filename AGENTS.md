@@ -2,8 +2,6 @@
 
 This is a web application for a yearly survey on [Omarchy Linux](https://oomarchy.org). Users can participate in the survey to provide feedback on the project.
 
-
-
 ## Project Configuration
 
 - **Language**: TypeScript
@@ -11,7 +9,8 @@ This is a web application for a yearly survey on [Omarchy Linux](https://oomarch
 - **Add-ons**: prettier, eslint, tailwindcss, sveltekit-adapter, drizzle, better-auth, ai-tools
 - **UI Components**: shadcn-svelte
 - **Database**: Turso (libsql)
-- **Email service**: Resend 
+- **Email service**: Resend for email verification & magic links
+
 ---
 
 Always use shadcn-svelte UI components for UI elements.
