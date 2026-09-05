@@ -1,7 +1,8 @@
 <script lang="ts">
 	import { page } from '$app/state';
 	import { goto } from '$app/navigation';
-	import { Button } from '$lib/components/ui/button';
+	import { Button, buttonVariants } from '$lib/components/ui/button';
+	import * as Dialog from '$lib/components/ui/dialog/index.js';
 	import { Progress } from '$lib/components/ui/progress';
 	import * as Select from '$lib/components/ui/select/index.js';
 	import { Spinner } from '$lib/components/ui/spinner';
@@ -56,23 +57,46 @@
 	let errors = $state<Record<string, string>>({});
 	let saveState = $state<'idle' | 'saving' | 'saved' | 'error'>('idle');
 	let submitError = $state('');
+	let confirmOpen = $state(false);
+	let submitting = $state(false);
 	let saveTimer: ReturnType<typeof setTimeout> | null = null;
 	let saveQueued = false;
 
 	const sectionIds = $derived(def.sections.map((s) => s.id));
-	const requestedStep = $derived(page.url.searchParams.get('s'));
-	const sectionIndex = $derived.by(() => {
-		const i = sectionIds.indexOf(requestedStep ?? '');
-		if (i >= 0) return i;
-		// Default: first section with unanswered required questions, else first
-		// section with any unanswered question, else the first one.
-		const firstRequiredOpen = def.sections.findIndex((s) => !isSectionComplete(s, answers));
-		if (firstRequiredOpen >= 0) return firstRequiredOpen;
-		const firstOpen = def.sections.findIndex((s) => {
+
+	let activeSectionId = $state<string | null>(null);
+	// Pin the visible step: an explicit ?s= (initial load, jump, back/forward) always
+	// wins; otherwise the step stays put once resolved. This must NOT re-derive from
+	// answers — otherwise finishing a section's required questions yanks the user ahead.
+	$effect.pre(() => {
+		const requested = page.url.searchParams.get('s');
+		if (requested && sectionIds.includes(requested)) {
+			activeSectionId = requested;
+		} else if (!activeSectionId) {
+			activeSectionId = defaultSectionId();
+		}
+	});
+
+	/** Default step: first section with unanswered required, else any unanswered, else first. */
+	function defaultSectionId(): string {
+		const firstRequiredOpen = def.sections.find((s) => !isSectionComplete(s, answers));
+		if (firstRequiredOpen) return firstRequiredOpen.id;
+		const firstOpen = def.sections.find((s) => {
 			const counts = sectionAnswerCounts(s, answers);
 			return counts.answered < counts.total;
 		});
-		return firstOpen >= 0 ? firstOpen : 0;
+		return (firstOpen ?? def.sections[0]).id;
+	}
+
+	const sectionIndex = $derived.by(() => {
+		const requested = page.url.searchParams.get('s');
+		if (requested && sectionIds.includes(requested)) return sectionIds.indexOf(requested);
+		if (activeSectionId) return Math.max(0, sectionIds.indexOf(activeSectionId));
+		// First render only (SSR or pre-effect): resolve the default from initial answers
+		// so server and client agree. Afterwards activeSectionId is always set and this
+		// branch — the only one reading answers — is never taken, so answering can no
+		// longer move the user between sections.
+		return Math.max(0, sectionIds.indexOf(defaultSectionId()));
 	});
 	const section = $derived(def.sections[sectionIndex]);
 	const visible = $derived(section ? visibleQuestions(section, answers) : []);
@@ -80,6 +104,9 @@
 	// without required questions" (isSectionComplete is required-only and stays
 	// the submit gate; it must NOT drive the bar).
 	const progress = $derived(computeCompletion(def, answers));
+	const completedSectionCount = $derived(
+		def.sections.filter((s) => isSectionComplete(s, answers)).length
+	);
 	const sectionCounts = $derived(section ? sectionAnswerCounts(section, answers) : null);
 	const isLast = $derived(sectionIndex === def.sections.length - 1);
 
@@ -149,6 +176,7 @@
 
 	async function goTo(index: number) {
 		if (await saveNow()) {
+			activeSectionId = sectionIds[index];
 			// Query-param step nav can't be expressed via resolveRoute(); no `base` is configured.
 			// eslint-disable-next-line svelte/no-navigation-without-resolve
 			await goto(`/survey?s=${sectionIds[index]}`, { invalidateAll: false });
@@ -179,7 +207,9 @@
 	}
 
 	async function submit() {
+		if (submitting) return;
 		submitError = '';
+		confirmOpen = false;
 		const incomplete = firstIncompleteSection();
 		if (incomplete >= 0 && incomplete !== sectionIndex) {
 			await goTo(incomplete);
@@ -188,6 +218,7 @@
 		}
 		if (!validateSection()) return;
 		if (!(await saveNow())) return;
+		submitting = true;
 		try {
 			// Actions require a form body; submit carries no payload.
 			const res = await fetch('?/submit', { method: 'POST', body: new FormData() });
@@ -213,6 +244,8 @@
 			window.location.assign('/survey/done');
 		} catch {
 			submitError = 'Could not submit. Check your connection and try again.';
+		} finally {
+			submitting = false;
 		}
 	}
 </script>
@@ -336,7 +369,7 @@
 				</Select.Content>
 			</Select.Root>
 			{#if isLast}
-				<Button onclick={submit} class="shrink-0">Submit</Button>
+				<Button onclick={() => (confirmOpen = true)} class="shrink-0">Submit</Button>
 			{:else}
 				<Button onclick={next} class="shrink-0">Next</Button>
 			{/if}
@@ -344,4 +377,23 @@
 	</footer>
 	<!-- Spacer so the fixed footer never covers the last question. -->
 	<div class="h-24" aria-hidden="true"></div>
+
+	<Dialog.Root bind:open={confirmOpen}>
+		<Dialog.Content class="max-w-sm">
+			<Dialog.Header>
+				<Dialog.Title>Submit your response?</Dialog.Title>
+				<Dialog.Description>
+					You've answered {progress}% of the survey across {completedSectionCount} of
+					{def.sections.length} sections. Submitting locks your response — you won't be able to change
+					it afterwards.
+				</Dialog.Description>
+			</Dialog.Header>
+			<Dialog.Footer class="gap-2">
+				<Dialog.Close class={buttonVariants({ variant: 'outline' })}>Keep editing</Dialog.Close>
+				<Button onclick={submit} disabled={submitting}>
+					{submitting ? 'Submitting…' : 'Yes, submit'}
+				</Button>
+			</Dialog.Footer>
+		</Dialog.Content>
+	</Dialog.Root>
 </div>
