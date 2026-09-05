@@ -530,10 +530,9 @@ export function isSectionComplete(section: Section, answers: Answers): boolean {
  * Unlike isSectionComplete this counts optional questions too — used for progress display.
  */
 export function sectionCompletion(section: Section, answers: Answers): number {
-	const visible = section.questions.filter((q) => isKnownType(q.type) && isVisible(q, answers));
-	if (visible.length === 0) return 100;
-	const answered = visible.filter((q) => isAnswered(q, answers[q.id])).length;
-	return Math.round((answered / visible.length) * 100);
+	const { answered, total } = sectionAnswerCounts(section, answers);
+	if (total === 0) return 100;
+	return Math.round((answered / total) * 100);
 }
 
 export function sectionAnswerCounts(

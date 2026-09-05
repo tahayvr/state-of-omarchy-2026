@@ -3,6 +3,7 @@
 	import { goto } from '$app/navigation';
 	import { Button } from '$lib/components/ui/button';
 	import { Progress } from '$lib/components/ui/progress';
+	import * as Select from '$lib/components/ui/select/index.js';
 	import { Spinner } from '$lib/components/ui/spinner';
 	import RiCheckLine from 'remixicon-svelte/icons/check-line';
 	import { FieldDescription } from '$lib/components/ui/field';
@@ -27,6 +28,7 @@
 		isTextList,
 		isVisible,
 		sectionAnswerCounts,
+		sectionCompletion,
 		validateAnswer,
 		visibleQuestions,
 		type Answers,
@@ -162,6 +164,12 @@
 		await goTo(sectionIndex + 1);
 	}
 
+	/** Free jump: saves first, never blocks on validation (Next/Submit gate instead). */
+	async function jumpTo(index: number) {
+		if (index === sectionIndex) return;
+		await goTo(index);
+	}
+
 	/** First section (in order) with an unanswered required visible question. */
 	function firstIncompleteSection(): number {
 		for (let i = 0; i < def.sections.length; i++) {
@@ -285,19 +293,55 @@
 		{/each}
 	</div>
 
-	<footer class="mt-8 flex items-center justify-between gap-3">
-		<Button variant="outline" onclick={() => goTo(sectionIndex - 1)} disabled={sectionIndex === 0}>
-			Back
-		</Button>
-		{#if isLast}
-			<Button onclick={submit}>Review &amp; submit</Button>
-		{:else}
-			<Button onclick={next}>Next</Button>
+	<footer
+		class="fixed inset-x-0 bottom-0 z-10 border-t border-border bg-background/95 px-4 pt-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] backdrop-blur"
+	>
+		{#if submitError}
+			<FieldDescription
+				class="mx-auto mb-2 w-full max-w-2xl text-center text-destructive"
+				role="alert"
+			>
+				{submitError}
+			</FieldDescription>
 		{/if}
+		<div class="mx-auto flex w-full max-w-2xl items-center gap-2">
+			<Button
+				variant="outline"
+				onclick={() => goTo(sectionIndex - 1)}
+				disabled={sectionIndex === 0}
+				class="shrink-0"
+			>
+				Back
+			</Button>
+			<Select.Root
+				type="single"
+				value={section.id}
+				onValueChange={(v) => {
+					if (v) jumpTo(sectionIds.indexOf(v));
+				}}
+			>
+				<Select.Trigger aria-label="Jump to section" class="h-9 min-w-0 flex-1 text-sm">
+					<span class="truncate">
+						{sectionIndex + 1}. {section.title}
+					</span>
+				</Select.Trigger>
+				<Select.Content>
+					{#each def.sections as s, i (s.id)}
+						{@const pct = sectionCompletion(s, answers)}
+						{@const itemLabel = `${i + 1}. ${s.title}${pct === 100 ? ' ✓' : ''}`}
+						<Select.Item value={s.id} label={itemLabel}>
+							{itemLabel}
+						</Select.Item>
+					{/each}
+				</Select.Content>
+			</Select.Root>
+			{#if isLast}
+				<Button onclick={submit} class="shrink-0">Submit</Button>
+			{:else}
+				<Button onclick={next} class="shrink-0">Next</Button>
+			{/if}
+		</div>
 	</footer>
-	{#if submitError}
-		<FieldDescription class="mt-3 text-center text-destructive" role="alert">
-			{submitError}
-		</FieldDescription>
-	{/if}
+	<!-- Spacer so the fixed footer never covers the last question. -->
+	<div class="h-24" aria-hidden="true"></div>
 </div>

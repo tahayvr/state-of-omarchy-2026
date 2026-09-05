@@ -19,7 +19,7 @@
 		<CardHeader class="text-center">
 			<CardTitle>Thanks for completing the survey!</CardTitle>
 			<CardDescription>
-				{data.answered} answers recorded for {data.email}. Your response is locked in.
+				{data.answered} answers recorded for {data.email}.
 			</CardDescription>
 		</CardHeader>
 		<CardContent class="flex justify-center gap-3">
