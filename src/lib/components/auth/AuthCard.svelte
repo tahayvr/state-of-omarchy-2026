@@ -82,7 +82,8 @@
 <Card class="w-full max-w-md bg-transparent">
 	<CardHeader class="text-center">
 		<CardDescription>
-			Participate in the State of Omarchy 2026 survey by making an account.
+			Sign in with your email to take the State of Omarchy 2026 survey — new here? The same link
+			creates your account.
 		</CardDescription>
 	</CardHeader>
 	<CardContent>

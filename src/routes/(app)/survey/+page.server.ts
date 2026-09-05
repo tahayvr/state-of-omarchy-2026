@@ -13,7 +13,7 @@ import {
 export const load: PageServerLoad = async (event) => {
 	const user = event.locals.user;
 	if (!user) {
-		redirect(302, `/login?next=${encodeURIComponent('/survey')}`);
+		redirect(302, `/?next=${encodeURIComponent('/survey')}`);
 	}
 
 	const def = loadSurvey(CURRENT_EDITION);

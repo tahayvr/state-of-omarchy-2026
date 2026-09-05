@@ -23,7 +23,7 @@
 			</CardDescription>
 		</CardHeader>
 		<CardContent class="flex justify-center gap-3">
-			<Button href="/account" variant="outline">Back to account</Button>
+			<Button href="/" variant="outline">Back home</Button>
 		</CardContent>
 	</Card>
 </div>

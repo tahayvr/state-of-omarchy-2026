@@ -7,7 +7,7 @@ import { computeCompletion } from '$lib/surveys/definition';
 export const load: PageServerLoad = async (event) => {
 	const user = event.locals.user;
 	if (!user) {
-		redirect(302, `/login?next=${encodeURIComponent('/survey/done')}`);
+		redirect(302, `/?next=${encodeURIComponent('/survey/done')}`);
 	}
 	const def = loadSurvey(CURRENT_EDITION);
 	const response = await getResponseByUser(def.meta.editionId, user.id);

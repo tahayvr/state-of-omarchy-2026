@@ -1,5 +1,3 @@
-# State of Omarchy Survey
-
 Yearly survey for Omarchy Linux. Passwordless auth (email link or code), one response per
 account, and a questionnaire driven entirely by `src/lib/surveys/<year>/survey.yml`.
 

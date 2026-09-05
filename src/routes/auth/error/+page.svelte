@@ -35,7 +35,7 @@
 			<CardDescription>{description}</CardDescription>
 		</CardHeader>
 		<CardContent class="flex justify-center">
-			<Button href="/login" class="w-full max-w-xs">Get a new sign-in link</Button>
+			<Button href="/" class="w-full max-w-xs">Get a new sign-in link</Button>
 		</CardContent>
 	</Card>
 </div>
