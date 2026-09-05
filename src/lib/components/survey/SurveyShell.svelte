@@ -181,13 +181,23 @@
 			// Query-param step nav can't be expressed via resolveRoute(); no `base` is configured.
 			// eslint-disable-next-line svelte/no-navigation-without-resolve
 			await goto(`/survey?s=${sectionIds[index]}`, { invalidateAll: false });
-			window.scrollTo({ top: 0 });
+			focusHeading();
 		}
+	}
+
+	/** Move keyboard/screen-reader focus to the section heading (it persists across steps). */
+	function focusHeading() {
+		window.scrollTo({ top: 0 });
+		// The heading element itself never unmounts (only its text changes), so focusing is
+		// safe immediately — no tick needed.
+		document.getElementById('survey-section-heading')?.focus({ preventScroll: true });
 	}
 
 	async function next() {
 		if (!validateSection()) {
-			window.scrollTo({ top: 0, behavior: 'smooth' });
+			// Inline errors announce via role="alert"; move focus to the heading so
+			// keyboard users restart from a known point instead of a dead button.
+			focusHeading();
 			return;
 		}
 		await goTo(sectionIndex + 1);
@@ -217,7 +227,10 @@
 			validateSection();
 			return;
 		}
-		if (!validateSection()) return;
+		if (!validateSection()) {
+			focusHeading();
+			return;
+		}
 		if (!(await saveNow())) return;
 		submitting = true;
 		try {
@@ -270,7 +283,9 @@
 		</div>
 		<Progress value={progress} aria-label="Survey progress" />
 		<div class="flex items-baseline justify-between gap-4">
-			<h1 class="text-xl font-semibold">{section.title}</h1>
+			<h1 id="survey-section-heading" tabindex="-1" class="text-xl font-semibold outline-none">
+				{section.title}
+			</h1>
 			{#if sectionCounts}
 				<p class="shrink-0 text-sm text-muted-foreground" aria-live="polite">
 					{sectionCounts.answered} of {sectionCounts.total} answered
