@@ -1,6 +1,7 @@
 <script lang="ts">
 	import { page } from '$app/state';
 	import Logo from '$lib/components/brand/Logo.svelte';
+	import Seo from '$lib/components/head/Seo.svelte';
 	import { Button } from '$lib/components/ui/button';
 	import {
 		Card,
@@ -26,6 +27,8 @@
 				: 'Your sign-in link was invalid. Request a fresh one below.'
 	);
 </script>
+
+<Seo title="Sign-in link problem — State of Omarchy 2026" origin={page.url.origin} />
 
 <div class="flex min-h-screen flex-col items-center justify-center gap-8 px-4 py-12">
 	<Logo />

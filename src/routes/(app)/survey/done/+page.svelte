@@ -1,5 +1,7 @@
 <script lang="ts">
+	import { page } from '$app/state';
 	import { Button } from '$lib/components/ui/button';
+	import Seo from '$lib/components/head/Seo.svelte';
 	import {
 		Card,
 		CardContent,
@@ -11,6 +13,8 @@
 
 	let { data }: { data: PageServerData } = $props();
 </script>
+
+<Seo title="Thanks — State of Omarchy 2026" origin={page.url.origin} />
 
 <div
 	class="mx-auto flex min-h-screen w-full max-w-2xl flex-col items-center justify-center gap-6 px-4 py-12"

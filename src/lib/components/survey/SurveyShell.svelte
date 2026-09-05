@@ -4,6 +4,7 @@
 	import { Button, buttonVariants } from '$lib/components/ui/button';
 	import * as Dialog from '$lib/components/ui/dialog/index.js';
 	import { Progress } from '$lib/components/ui/progress';
+	import Seo from '$lib/components/head/Seo.svelte';
 	import * as Select from '$lib/components/ui/select/index.js';
 	import { Spinner } from '$lib/components/ui/spinner';
 	import RiCheckLine from 'remixicon-svelte/icons/check-line';
@@ -251,6 +252,7 @@
 </script>
 
 <div class="mx-auto w-full max-w-2xl px-4 py-8">
+	<Seo title={`Survey — ${section.title} · State of Omarchy 2026`} origin={page.url.origin} />
 	<header class="sticky top-0 z-10 space-y-2 bg-background/95 py-4 backdrop-blur">
 		<div class="flex items-baseline justify-between gap-4">
 			<p class="text-sm text-muted-foreground">
