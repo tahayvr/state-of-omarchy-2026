@@ -176,13 +176,15 @@
 	}
 
 	async function goTo(index: number) {
-		if (await saveNow()) {
-			activeSectionId = sectionIds[index];
-			// Query-param step nav can't be expressed via resolveRoute(); no `base` is configured.
-			// eslint-disable-next-line svelte/no-navigation-without-resolve
-			await goto(`/survey?s=${sectionIds[index]}`, { invalidateAll: false });
-			focusHeading();
-		}
+		activeSectionId = sectionIds[index];
+		// Don't block navigation on save: autosave already persists every answer, and the
+		// shell stays mounted across ?s= changes so an in-flight save completes fine.
+		// (submit() still awaits a final save — that one gates correctness.)
+		void saveNow();
+		// Query-param step nav can't be expressed via resolveRoute(); no `base` is configured.
+		// eslint-disable-next-line svelte/no-navigation-without-resolve
+		await goto(`/survey?s=${sectionIds[index]}`, { invalidateAll: false });
+		focusHeading();
 	}
 
 	/** Move keyboard/screen-reader focus to the section heading (it persists across steps). */
