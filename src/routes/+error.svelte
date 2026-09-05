@@ -1,6 +1,5 @@
 <script lang="ts">
 	import { page } from '$app/state';
-	import Logo from '$lib/components/brand/Logo.svelte';
 	import Seo from '$lib/components/head/Seo.svelte';
 	import { Button } from '$lib/components/ui/button';
 	import {
