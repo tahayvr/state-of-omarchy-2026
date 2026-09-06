@@ -217,14 +217,14 @@ sections:
       - id: quattro_status
         type: single
         required: true
-        prompt: Are you using Omarchy Quattro (4.x)?
+        prompt: Are you using Omarchy Quattro (v4.x)?
         options:
           - id: fresh
-            label: Fresh 4.x install
+            label: Fresh v4.x install
           - id: upgraded
-            label: Upgraded from 3.x
+            label: Upgraded from v3.x
           - id: still_3
-            label: Still on 3.x
+            label: Still on v3.x or older
           - id: rolled_back
             label: Upgraded, then rolled back
           - id: unsure

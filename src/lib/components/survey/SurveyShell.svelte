@@ -63,14 +63,18 @@
 	let submitError = $state('');
 	let confirmOpen = $state(false);
 	let submitting = $state(false);
+	let submitted = $state(false);
 	let saveTimer: ReturnType<typeof setTimeout> | null = null;
 	let saveQueued = false;
 
 	const reducedMotion = new MediaQuery('(prefers-reduced-motion: reduce)');
-	const sectionEnter = $derived(
-		reducedMotion.current ? { duration: 0 } : { y: 12, duration: 220, delay: 60 }
-	);
 	const sectionExit = $derived(reducedMotion.current ? { duration: 0 } : { duration: 120 });
+
+	/** Staggered per-question entrance, capped so long sections don't take forever to reveal. */
+	function questionEnter(index: number) {
+		if (reducedMotion.current) return { duration: 0 };
+		return { y: 10, duration: 200, delay: 40 + Math.min(index, 8) * 40 };
+	}
 
 	let stepperEl = $state<HTMLElement>();
 
@@ -243,24 +247,29 @@
 	async function submit() {
 		if (submitting) return;
 		submitError = '';
-		confirmOpen = false;
 		const incomplete = firstIncompleteSection();
 		if (incomplete >= 0 && incomplete !== sectionIndex) {
+			confirmOpen = false;
 			await goTo(incomplete);
 			validateSection();
 			return;
 		}
 		if (!validateSection()) {
+			confirmOpen = false;
 			focusHeading();
 			return;
 		}
-		if (!(await saveNow())) return;
+		if (!(await saveNow())) {
+			confirmOpen = false;
+			return;
+		}
 		submitting = true;
 		try {
 			// Actions require a form body; submit carries no payload.
 			const res = await fetch('?/submit', { method: 'POST', body: new FormData() });
 			const body = await res.json().catch(() => null);
 			if (!res.ok || body?.type !== 'success') {
+				confirmOpen = false;
 				const issues: Record<string, string> = body?.data?.issues ?? body?.issues ?? {};
 				for (const [qid, message] of Object.entries(issues)) {
 					errors[qid] = String(message);
@@ -278,8 +287,14 @@
 				submitError = 'Something needs attention above before submitting.';
 				return;
 			}
-			window.location.assign('/survey/done');
+			// Brief success state inside the still-open dialog before the soft nav —
+			// an instant redirect reads as if nothing happened.
+			submitted = true;
+			await new Promise((r) => setTimeout(r, 650));
+			// eslint-disable-next-line svelte/no-navigation-without-resolve
+			await goto('/survey/done');
 		} catch {
+			confirmOpen = false;
 			submitError = 'Could not submit. Check your connection and try again.';
 		} finally {
 			submitting = false;
@@ -321,53 +336,55 @@
 	</header>
 
 	{#key section.id}
-		<div class="mt-4 space-y-8" in:fly={sectionEnter} out:fade={sectionExit}>
-			{#each visible as question (question.id)}
-				<QuestionCard
-					{question}
-					error={errors[question.id]}
-					answered={isAnswered(question, answers[question.id])}
-				>
-					{#if isSingle(question)}
-						<SingleChoice
-							{question}
-							value={answers[question.id]}
-							onChange={(v) => setAnswer(question.id, v)}
-						/>
-					{:else if isMultiple(question)}
-						<MultiChoice
-							{question}
-							value={answers[question.id]}
-							onChange={(v) => setAnswer(question.id, v)}
-						/>
-					{:else if isScale(question) || isNps(question)}
-						<ScaleInput
-							{question}
-							value={answers[question.id]}
-							onChange={(v) => setAnswer(question.id, v)}
-						/>
-					{:else if isText(question)}
-						<TextAnswer
-							{question}
-							value={answers[question.id]}
-							onChange={(v) => setAnswer(question.id, v)}
-						/>
-					{:else if isTextList(question)}
-						<TextList
-							{question}
-							value={answers[question.id]}
-							onChange={(v) => setAnswer(question.id, v)}
-						/>
-					{:else if isCountry(question)}
-						<CountrySelect
-							{question}
-							value={answers[question.id]}
-							onChange={(v) => setAnswer(question.id, v)}
-						/>
-					{:else}
-						<UnsupportedQuestion {question} />
-					{/if}
-				</QuestionCard>
+		<div class="mt-4 space-y-8" out:fade={sectionExit}>
+			{#each visible as question, i (question.id)}
+				<div in:fly={questionEnter(i)}>
+					<QuestionCard
+						{question}
+						error={errors[question.id]}
+						answered={isAnswered(question, answers[question.id])}
+					>
+						{#if isSingle(question)}
+							<SingleChoice
+								{question}
+								value={answers[question.id]}
+								onChange={(v) => setAnswer(question.id, v)}
+							/>
+						{:else if isMultiple(question)}
+							<MultiChoice
+								{question}
+								value={answers[question.id]}
+								onChange={(v) => setAnswer(question.id, v)}
+							/>
+						{:else if isScale(question) || isNps(question)}
+							<ScaleInput
+								{question}
+								value={answers[question.id]}
+								onChange={(v) => setAnswer(question.id, v)}
+							/>
+						{:else if isText(question)}
+							<TextAnswer
+								{question}
+								value={answers[question.id]}
+								onChange={(v) => setAnswer(question.id, v)}
+							/>
+						{:else if isTextList(question)}
+							<TextList
+								{question}
+								value={answers[question.id]}
+								onChange={(v) => setAnswer(question.id, v)}
+							/>
+						{:else if isCountry(question)}
+							<CountrySelect
+								{question}
+								value={answers[question.id]}
+								onChange={(v) => setAnswer(question.id, v)}
+							/>
+						{:else}
+							<UnsupportedQuestion {question} />
+						{/if}
+					</QuestionCard>
+				</div>
 			{/each}
 		</div>
 	{/key}
@@ -434,22 +451,47 @@
 	<!-- Spacer so the fixed footer never covers the last question. -->
 	<div class="h-24" aria-hidden="true"></div>
 
-	<Dialog.Root bind:open={confirmOpen}>
+	<Dialog.Root
+		open={confirmOpen}
+		onOpenChange={(open) => {
+			// Ignore close attempts (Esc, backdrop click) while the request is in flight
+			// or the success state is showing — the goto() below owns closing it.
+			if (!open && (submitting || submitted)) return;
+			confirmOpen = open;
+		}}
+	>
 		<Dialog.Content class="max-w-sm">
-			<Dialog.Header>
-				<Dialog.Title>Submit your response?</Dialog.Title>
-				<Dialog.Description>
-					You've answered {progress}% of the survey across {completedSectionCount} of
-					{def.sections.length} sections. Submitting locks your response — you won't be able to change
-					it afterwards.
-				</Dialog.Description>
-			</Dialog.Header>
-			<Dialog.Footer class="gap-2">
-				<Dialog.Close class={buttonVariants({ variant: 'outline' })}>Keep editing</Dialog.Close>
-				<Button onclick={submit} disabled={submitting}>
-					{submitting ? 'Submitting…' : 'Yes, submit'}
-				</Button>
-			</Dialog.Footer>
+			{#if submitted}
+				<div
+					class="flex flex-col items-center gap-3 py-4 text-center"
+					in:fade={reducedMotion.current ? { duration: 0 } : { duration: 200 }}
+				>
+					<span
+						class="flex size-12 items-center justify-center rounded-full bg-primary/10 text-primary"
+					>
+						<RiCheckLine class="size-6" aria-hidden="true" />
+					</span>
+					<p class="font-medium">Response submitted</p>
+					<p class="text-sm text-muted-foreground">Taking you to your confirmation…</p>
+				</div>
+			{:else}
+				<Dialog.Header>
+					<Dialog.Title>Submit your response?</Dialog.Title>
+					<Dialog.Description>
+						You've answered {progress}% of the survey across {completedSectionCount} of
+						{def.sections.length} sections. Submitting locks your response — you won't be able to change
+						it afterwards.
+					</Dialog.Description>
+				</Dialog.Header>
+				<Dialog.Footer class="gap-2">
+					<Dialog.Close class={buttonVariants({ variant: 'outline' })} disabled={submitting}>
+						Keep editing
+					</Dialog.Close>
+					<Button onclick={submit} disabled={submitting}>
+						{submitting ? 'Submitting…' : 'Yes, submit'}
+					</Button>
+				</Dialog.Footer>
+			{/if}
 		</Dialog.Content>
 	</Dialog.Root>
 </div>
