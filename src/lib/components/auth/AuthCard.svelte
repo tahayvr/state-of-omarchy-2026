@@ -1,4 +1,6 @@
 <script lang="ts">
+	import { fly, fade } from 'svelte/transition';
+	import { MediaQuery } from 'svelte/reactivity';
 	import { authClient } from '$lib/auth-client';
 	import { Card, CardHeader, CardTitle, CardContent } from '$lib/components/ui/card';
 	import { Input } from '$lib/components/ui/input';
@@ -123,110 +125,127 @@
 		code = '';
 		stopCooldown();
 	}
+
+	// Groups every status into the two states the card actually swaps between, so the
+	// title and body cross-fade together instead of the title flashing separately.
+	const showForm = $derived(status !== 'sent' && status !== 'verifying');
+	const reducedMotion = new MediaQuery('(prefers-reduced-motion: reduce)');
+	const stageEnter = $derived(
+		reducedMotion.current ? { duration: 0 } : { y: 8, duration: 220, delay: 80 }
+	);
+	const stageExit = $derived(reducedMotion.current ? { duration: 0 } : { duration: 120 });
 </script>
 
 <Card class="w-full max-w-md bg-transparent">
-	{#if status === 'idle' || status === 'error'}
-		<CardHeader class="text-center">
-			<CardTitle>Shape where Omarchy goes next</CardTitle>
-		</CardHeader>
-	{/if}
-	<CardContent>
-		{#if status === 'sent' || status === 'verifying'}
-			<div class="space-y-4 text-center">
-				<p class="text-sm font-medium">Check your inbox</p>
-				<FieldDescription>
-					We sent <span class="font-medium text-foreground">{email}</span> a link and a 6-digit code —
-					either works, both expire in 15 minutes.
-				</FieldDescription>
-				<form onsubmit={verifyCode} class="space-y-3">
-					<Field>
-						<FieldContent class="items-center">
-							<Label for="code" class="sr-only">6-digit code</Label>
-							<InputOTP
-								id="code"
-								maxlength={6}
-								bind:value={code}
-								disabled={status === 'verifying'}
-								onComplete={(value) => verifyCode(value)}
-							>
-								{#snippet children({ cells })}
-									<InputOTPGroup>
-										{#each cells.slice(0, 3) as cell, i (i)}
-											<InputOTPSlot {cell} />
-										{/each}
-									</InputOTPGroup>
-									<InputOTPSeparator />
-									<InputOTPGroup>
-										{#each cells.slice(3, 6) as cell, i (i)}
-											<InputOTPSlot {cell} />
-										{/each}
-									</InputOTPGroup>
-								{/snippet}
-							</InputOTP>
-						</FieldContent>
-						{#if errorMessage}
-							<FieldDescription class="text-destructive">{errorMessage}</FieldDescription>
-						{/if}
-					</Field>
-					<Button
-						type="submit"
-						class="w-full"
-						disabled={code.trim().length < 6 || status === 'verifying'}
-					>
-						{status === 'verifying' ? 'Signing in…' : 'Sign in with code'}
-					</Button>
-				</form>
-				<div class="flex flex-col items-center gap-1">
-					<div class="flex items-center gap-1 text-sm">
-						<span class="text-muted-foreground">Didn't get it?</span>
-						<Button
-							variant="link"
-							class="h-auto p-0 text-sm"
-							onclick={resend}
-							disabled={resendIn > 0 || resending}
-						>
-							{resending
-								? 'Resending…'
-								: resendIn > 0
-									? `Send again in ${resendIn}s`
-									: 'Send email again'}
-						</Button>
-					</div>
-					<Button variant="link" onclick={editEmail}>Use a different email</Button>
-				</div>
-			</div>
-		{:else}
-			<form onsubmit={sendLink}>
-				<Field>
-					<FieldContent>
-						<Label for="email" class="sr-only">Email address</Label>
-						<Input
-							id="email"
-							type="email"
-							name="email"
-							required
-							placeholder="you@example.com"
-							bind:value={email}
-							class="w-full"
-							autocomplete="email"
-							disabled={status === 'sending'}
-						/>
-					</FieldContent>
-					{#if status === 'error'}
-						<FieldDescription class="text-destructive">{errorMessage}</FieldDescription>
-					{/if}
-				</Field>
-				<div class="mt-4">
-					<Button type="submit" class="w-full" disabled={!email.trim() || status === 'sending'}>
-						{status === 'sending' ? 'Sending…' : 'Send sign-in email'}
-					</Button>
-				</div>
-			</form>
-			<div class="mt-4 flex justify-center">
-				<WhyNeedAccount />
+	{#key showForm}
+		{#if showForm}
+			<div in:fly={stageEnter} out:fade={stageExit}>
+				<CardHeader class="text-center">
+					<CardTitle>Shape where Omarchy goes next</CardTitle>
+				</CardHeader>
 			</div>
 		{/if}
+	{/key}
+	<CardContent>
+		{#key showForm}
+			{#if !showForm}
+				<div class="space-y-4 text-center" in:fly={stageEnter} out:fade={stageExit}>
+					<p class="text-sm font-medium">Check your inbox</p>
+					<FieldDescription>
+						We sent <span class="font-medium text-foreground">{email}</span> a link and a 6-digit code
+						— either works, both expire in 15 minutes.
+					</FieldDescription>
+					<form onsubmit={verifyCode} class="space-y-3">
+						<Field>
+							<FieldContent class="items-center">
+								<Label for="code" class="sr-only">6-digit code</Label>
+								<InputOTP
+									id="code"
+									maxlength={6}
+									bind:value={code}
+									disabled={status === 'verifying'}
+									onComplete={(value) => verifyCode(value)}
+								>
+									{#snippet children({ cells })}
+										<InputOTPGroup>
+											{#each cells.slice(0, 3) as cell, i (i)}
+												<InputOTPSlot {cell} />
+											{/each}
+										</InputOTPGroup>
+										<InputOTPSeparator />
+										<InputOTPGroup>
+											{#each cells.slice(3, 6) as cell, i (i)}
+												<InputOTPSlot {cell} />
+											{/each}
+										</InputOTPGroup>
+									{/snippet}
+								</InputOTP>
+							</FieldContent>
+							{#if errorMessage}
+								<FieldDescription class="text-destructive">{errorMessage}</FieldDescription>
+							{/if}
+						</Field>
+						<Button
+							type="submit"
+							class="w-full"
+							disabled={code.trim().length < 6 || status === 'verifying'}
+						>
+							{status === 'verifying' ? 'Signing in…' : 'Sign in with code'}
+						</Button>
+					</form>
+					<div class="flex flex-col items-center gap-1">
+						<div class="flex items-center gap-1 text-sm">
+							<span class="text-muted-foreground">Didn't get it?</span>
+							<Button
+								variant="link"
+								class="h-auto p-0 text-sm"
+								onclick={resend}
+								disabled={resendIn > 0 || resending}
+							>
+								{resending
+									? 'Resending…'
+									: resendIn > 0
+										? `Send again in ${resendIn}s`
+										: 'Send email again'}
+							</Button>
+						</div>
+						<Button variant="link" onclick={editEmail}>Use a different email</Button>
+					</div>
+				</div>
+			{:else}
+				<div in:fly={stageEnter} out:fade={stageExit}>
+					<form onsubmit={sendLink}>
+						<Field>
+							<FieldContent>
+								<Label for="email" class="sr-only">Email address</Label>
+								<Input
+									id="email"
+									type="email"
+									name="email"
+									required
+									placeholder="you@example.com"
+									bind:value={email}
+									class="w-full"
+									autocomplete="email"
+									disabled={status === 'sending'}
+								/>
+							</FieldContent>
+							{#if status === 'error'}
+								<FieldDescription class="text-destructive">{errorMessage}</FieldDescription>
+							{/if}
+						</Field>
+						<div class="mt-4">
+							<Button type="submit" class="w-full" disabled={!email.trim() || status === 'sending'}>
+								{status === 'sending' ? 'Sending…' : 'Send sign-in email'}
+							</Button>
+						</div>
+					</form>
+					<div class="mt-4 flex justify-center">
+						<WhyNeedAccount />
+					</div>
+				</div>
+			{/if}
+		{/key}
 	</CardContent>
 	<!-- {#if status === 'idle' || status === 'error'}
 		<CardFooter class="flex justify-center">
