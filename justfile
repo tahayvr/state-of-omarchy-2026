@@ -42,6 +42,12 @@ survey-lint:
 typecheck-watch:
     pnpm check:watch
 
+# Emails every waitlist signup that hasn't been notified yet that the survey is live.
+# Run once on launch day, after SURVEY_LAUNCHED=true is deployed. Safe to re-run —
+# only unnotified addresses (and any that failed last time) are emailed.
+notify-waitlist:
+    pnpm notify:waitlist
+
 # Database (Turso/libsql via Drizzle). Schema lives in src/lib/server/db/schema.ts,
 # reading DATABASE_URL + DATABASE_AUTH_TOKEN from the environment (see drizzle.config.ts).
 #

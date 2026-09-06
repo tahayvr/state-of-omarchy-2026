@@ -21,6 +21,7 @@ cp .env.example .env   # then fill in the values below
 | `BETTER_AUTH_SECRET`                   | Auth secret (`openssl rand -base64 32`)                                                |
 | `RESEND_API_KEY`                       | Resend key (leave empty in dev: magic links & OTP codes print in the terminal instead) |
 | `RESEND_FROM`                          | Verified sender, needed for real delivery                                              |
+| `SURVEY_LAUNCHED`                      | `false`/unset shows the waitlist on `/`; `true` opens the real survey (see below)      |
 
 Push the schema, then start developing:
 
@@ -28,6 +29,28 @@ Push the schema, then start developing:
 pnpm db:push --force   # creates auth + survey tables (dev only; use generate+migrate in prod)
 pnpm dev
 ```
+
+## Pre-launch Waitlist
+
+The site can go live before the survey itself opens. While `SURVEY_LAUNCHED` is `false`/unset,
+`/` shows a simple email-capture waitlist instead of the sign-in flow, and every `/survey*`
+route redirects home regardless of session state — so there's no way to reach the survey early.
+Signups live in the `waitlist_signups` table (`src/lib/server/db/waitlist.schema.ts`); the
+same email can submit more than once without erroring (it's just told it's already on the list).
+
+**Launch day:**
+
+1. Set `SURVEY_LAUNCHED=true` in the environment and redeploy. `/` now shows the normal
+   passwordless sign-in flow, and `/survey*` is reachable again.
+2. Email everyone who joined the waitlist:
+
+   ```sh
+   pnpm notify:waitlist   # or: just notify-waitlist
+   ```
+
+   This runs standalone (outside SvelteKit/Vite), reading `.env` directly. It only emails
+   addresses that haven't been notified yet, marking each as sent as it goes — so if a run
+   fails partway through, re-running it just retries what's left.
 
 ## Survey Questions
 

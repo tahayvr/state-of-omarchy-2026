@@ -17,7 +17,8 @@
 		"db:migrate": "drizzle-kit migrate",
 		"db:studio": "drizzle-kit studio",
 		"auth:schema": "auth generate --config src/lib/server/auth.ts --output src/lib/server/db/auth.schema.ts --yes",
-		"survey:lint": "tsx scripts/survey-lint.ts"
+		"survey:lint": "tsx scripts/survey-lint.ts",
+		"notify:waitlist": "tsx --env-file=.env scripts/notify-waitlist.ts"
 	},
 	"devDependencies": {
 		"@eslint/js": "^10.0.1",
