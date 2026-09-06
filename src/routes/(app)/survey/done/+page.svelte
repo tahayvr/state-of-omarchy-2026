@@ -1,6 +1,7 @@
 <script lang="ts">
 	import { page } from '$app/state';
 	import { Button } from '$lib/components/ui/button';
+	import Logo from '$lib/components/brand/Logo.svelte';
 	import Seo from '$lib/components/head/Seo.svelte';
 	import {
 		Card,
@@ -50,6 +51,8 @@
 <div
 	class="mx-auto flex min-h-screen w-full max-w-2xl flex-col items-center justify-center gap-6 px-4 py-12"
 >
+	<Logo size="sm" tagline={false} />
+
 	<div class="w-full" in:fly={cardEnter}>
 		<Card class="w-full bg-transparent">
 			<CardHeader class="text-center">
