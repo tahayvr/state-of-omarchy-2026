@@ -53,9 +53,9 @@
 	<div class="w-full" in:fly={cardEnter}>
 		<Card class="w-full bg-transparent">
 			<CardHeader class="text-center">
-				<CardTitle>Thanks for completing the survey!</CardTitle>
+				<CardTitle>You're in the record books</CardTitle>
 				<CardDescription>
-					{data.answered} answers recorded for {data.email}. Your response is locked in.
+					{data.answered} answers now locked in for {data.email}. thanks for taking the time.
 				</CardDescription>
 			</CardHeader>
 			<CardContent class="flex flex-col items-center gap-4">
@@ -63,7 +63,8 @@
 					<Button href={xUrl} target="_blank" rel="noopener" size="sm">Share on X</Button>
 				</div>
 				<p class="text-center text-xs text-muted-foreground">
-					Results will be published later on a separate site — watch for the announcement.
+					We're crunching every response into a proper results site. watch for the announcement when
+					it's live.
 				</p>
 				<Button href="/" variant="ghost" size="sm">Back home</Button>
 			</CardContent>

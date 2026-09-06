@@ -1,6 +1,6 @@
 <script lang="ts">
 	import { authClient } from '$lib/auth-client';
-	import { Card, CardHeader, CardDescription, CardContent } from '$lib/components/ui/card';
+	import { Card, CardHeader, CardTitle, CardContent } from '$lib/components/ui/card';
 	import { Input } from '$lib/components/ui/input';
 	import { Label } from '$lib/components/ui/label';
 	import { Button } from '$lib/components/ui/button';
@@ -128,10 +128,7 @@
 <Card class="w-full max-w-md bg-transparent">
 	{#if status === 'idle' || status === 'error'}
 		<CardHeader class="text-center">
-			<CardDescription>
-				Sign in with your email to take the State of Omarchy 2026 survey — new here? The same link
-				creates your account.
-			</CardDescription>
+			<CardTitle>Shape where Omarchy goes next</CardTitle>
 		</CardHeader>
 	{/if}
 	<CardContent>
@@ -139,8 +136,8 @@
 			<div class="space-y-4 text-center">
 				<p class="text-sm font-medium">Check your inbox</p>
 				<FieldDescription>
-					We emailed <span class="font-medium text-foreground">{email}</span> a sign-in link and a 6-digit
-					code. Use either one — both expire in 15 minutes. Can't find it? Check your spam folder.
+					We sent <span class="font-medium text-foreground">{email}</span> a link and a 6-digit code —
+					either works, both expire in 15 minutes.
 				</FieldDescription>
 				<form onsubmit={verifyCode} class="space-y-3">
 					<Field>
