@@ -1,6 +1,8 @@
 <script lang="ts">
 	import { page } from '$app/state';
 	import { goto } from '$app/navigation';
+	import { fly, fade } from 'svelte/transition';
+	import { MediaQuery } from 'svelte/reactivity';
 	import { Button, buttonVariants } from '$lib/components/ui/button';
 	import * as Dialog from '$lib/components/ui/dialog/index.js';
 	import { Progress } from '$lib/components/ui/progress';
@@ -29,6 +31,7 @@
 		isText,
 		isTextList,
 		isVisible,
+		isAnswered,
 		sectionAnswerCounts,
 		sectionCompletion,
 		validateAnswer,
@@ -62,6 +65,12 @@
 	let submitting = $state(false);
 	let saveTimer: ReturnType<typeof setTimeout> | null = null;
 	let saveQueued = false;
+
+	const reducedMotion = new MediaQuery('(prefers-reduced-motion: reduce)');
+	const sectionEnter = $derived(
+		reducedMotion.current ? { duration: 0 } : { y: 12, duration: 220, delay: 60 }
+	);
+	const sectionExit = $derived(reducedMotion.current ? { duration: 0 } : { duration: 120 });
 
 	const sectionIds = $derived(def.sections.map((s) => s.id));
 
@@ -299,51 +308,57 @@
 		{/if}
 	</header>
 
-	<div class="mt-4 space-y-8">
-		{#each visible as question (question.id)}
-			<QuestionCard {question} error={errors[question.id]}>
-				{#if isSingle(question)}
-					<SingleChoice
-						{question}
-						value={answers[question.id]}
-						onChange={(v) => setAnswer(question.id, v)}
-					/>
-				{:else if isMultiple(question)}
-					<MultiChoice
-						{question}
-						value={answers[question.id]}
-						onChange={(v) => setAnswer(question.id, v)}
-					/>
-				{:else if isScale(question) || isNps(question)}
-					<ScaleInput
-						{question}
-						value={answers[question.id]}
-						onChange={(v) => setAnswer(question.id, v)}
-					/>
-				{:else if isText(question)}
-					<TextAnswer
-						{question}
-						value={answers[question.id]}
-						onChange={(v) => setAnswer(question.id, v)}
-					/>
-				{:else if isTextList(question)}
-					<TextList
-						{question}
-						value={answers[question.id]}
-						onChange={(v) => setAnswer(question.id, v)}
-					/>
-				{:else if isCountry(question)}
-					<CountrySelect
-						{question}
-						value={answers[question.id]}
-						onChange={(v) => setAnswer(question.id, v)}
-					/>
-				{:else}
-					<UnsupportedQuestion {question} />
-				{/if}
-			</QuestionCard>
-		{/each}
-	</div>
+	{#key section.id}
+		<div class="mt-4 space-y-8" in:fly={sectionEnter} out:fade={sectionExit}>
+			{#each visible as question (question.id)}
+				<QuestionCard
+					{question}
+					error={errors[question.id]}
+					answered={isAnswered(question, answers[question.id])}
+				>
+					{#if isSingle(question)}
+						<SingleChoice
+							{question}
+							value={answers[question.id]}
+							onChange={(v) => setAnswer(question.id, v)}
+						/>
+					{:else if isMultiple(question)}
+						<MultiChoice
+							{question}
+							value={answers[question.id]}
+							onChange={(v) => setAnswer(question.id, v)}
+						/>
+					{:else if isScale(question) || isNps(question)}
+						<ScaleInput
+							{question}
+							value={answers[question.id]}
+							onChange={(v) => setAnswer(question.id, v)}
+						/>
+					{:else if isText(question)}
+						<TextAnswer
+							{question}
+							value={answers[question.id]}
+							onChange={(v) => setAnswer(question.id, v)}
+						/>
+					{:else if isTextList(question)}
+						<TextList
+							{question}
+							value={answers[question.id]}
+							onChange={(v) => setAnswer(question.id, v)}
+						/>
+					{:else if isCountry(question)}
+						<CountrySelect
+							{question}
+							value={answers[question.id]}
+							onChange={(v) => setAnswer(question.id, v)}
+						/>
+					{:else}
+						<UnsupportedQuestion {question} />
+					{/if}
+				</QuestionCard>
+			{/each}
+		</div>
+	{/key}
 
 	<footer
 		class="fixed inset-x-0 bottom-0 z-10 border-t border-border bg-background/95 px-4 pt-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] backdrop-blur"
