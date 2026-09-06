@@ -7,10 +7,10 @@
 	import * as Dialog from '$lib/components/ui/dialog/index.js';
 	import { Progress } from '$lib/components/ui/progress';
 	import Seo from '$lib/components/head/Seo.svelte';
-	import * as Select from '$lib/components/ui/select/index.js';
 	import { Spinner } from '$lib/components/ui/spinner';
 	import RiCheckLine from 'remixicon-svelte/icons/check-line';
 	import { FieldDescription } from '$lib/components/ui/field';
+	import { cn } from '$lib/utils';
 	import QuestionCard from '$lib/components/survey/QuestionCard.svelte';
 	import SingleChoice from '$lib/components/survey/SingleChoice.svelte';
 	import MultiChoice from '$lib/components/survey/MultiChoice.svelte';
@@ -72,6 +72,8 @@
 	);
 	const sectionExit = $derived(reducedMotion.current ? { duration: 0 } : { duration: 120 });
 
+	let stepperEl = $state<HTMLElement>();
+
 	const sectionIds = $derived(def.sections.map((s) => s.id));
 
 	let activeSectionId = $state<string | null>(null);
@@ -119,6 +121,16 @@
 	);
 	const sectionCounts = $derived(section ? sectionAnswerCounts(section, answers) : null);
 	const isLast = $derived(sectionIndex === def.sections.length - 1);
+
+	// Keep the active step pill in view as the section changes (nav can overflow on mobile).
+	$effect(() => {
+		const el = stepperEl?.querySelector<HTMLElement>(`[data-section-step="${section.id}"]`);
+		el?.scrollIntoView({
+			behavior: reducedMotion.current ? 'auto' : 'smooth',
+			inline: 'center',
+			block: 'nearest'
+		});
+	});
 
 	function setAnswer(qid: string, value: AnswerValue) {
 		answers[qid] = value;
@@ -380,28 +392,38 @@
 			>
 				Back
 			</Button>
-			<Select.Root
-				type="single"
-				value={section.id}
-				onValueChange={(v) => {
-					if (v) jumpTo(sectionIds.indexOf(v));
-				}}
+			<nav
+				aria-label="Jump to section"
+				bind:this={stepperEl}
+				class="flex min-w-0 flex-1 [scrollbar-width:none] items-center justify-center gap-1.5 overflow-x-auto py-1 [&::-webkit-scrollbar]:hidden"
 			>
-				<Select.Trigger aria-label="Jump to section" class="h-9 min-w-0 flex-1 text-sm">
-					<span class="truncate">
-						{sectionIndex + 1}. {section.title}
-					</span>
-				</Select.Trigger>
-				<Select.Content>
-					{#each def.sections as s, i (s.id)}
-						{@const pct = sectionCompletion(s, answers)}
-						{@const itemLabel = `${i + 1}. ${s.title}${pct === 100 ? ' ✓' : ''}`}
-						<Select.Item value={s.id} label={itemLabel}>
-							{itemLabel}
-						</Select.Item>
-					{/each}
-				</Select.Content>
-			</Select.Root>
+				{#each def.sections as s, i (s.id)}
+					{@const complete = sectionCompletion(s, answers) === 100}
+					{@const current = i === sectionIndex}
+					<button
+						type="button"
+						data-section-step={s.id}
+						onclick={() => jumpTo(i)}
+						aria-current={current ? 'step' : undefined}
+						aria-label={`${i + 1}. ${s.title}${complete ? ' — complete' : ''}`}
+						title={s.title}
+						class={cn(
+							'flex size-8 shrink-0 scroll-mx-2 items-center justify-center rounded-full border text-xs font-medium transition-colors',
+							current
+								? 'border-primary bg-primary text-primary-foreground'
+								: complete
+									? 'border-primary/40 bg-primary/10 text-primary'
+									: 'border-border text-muted-foreground hover:border-primary/40 hover:text-foreground'
+						)}
+					>
+						{#if complete && !current}
+							<RiCheckLine class="size-4" aria-hidden="true" />
+						{:else}
+							{i + 1}
+						{/if}
+					</button>
+				{/each}
+			</nav>
 			{#if isLast}
 				<Button onclick={() => (confirmOpen = true)} class="shrink-0">Submit</Button>
 			{:else}
