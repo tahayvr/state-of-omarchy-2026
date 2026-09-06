@@ -230,9 +230,17 @@
 		await goTo(sectionIndex + 1);
 	}
 
-	/** Free jump: saves first, never blocks on validation (Next/Submit gate instead). */
+	/**
+	 * Stepper jump: matches Next's gate for forward moves (skipping ahead still requires
+	 * the current section to be valid), but going backward to review is always free —
+	 * same as the Back button.
+	 */
 	async function jumpTo(index: number) {
 		if (index === sectionIndex) return;
+		if (index > sectionIndex && !validateSection()) {
+			focusHeading();
+			return;
+		}
 		await goTo(index);
 	}
 
